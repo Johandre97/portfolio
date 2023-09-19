@@ -1,0 +1,56 @@
+body {
+	background: linear-gradient(to right, rgb(225, 203, 204), rgb(191, 120, 196));;
+    color: rgba(0,0,0,.5);
+}
+
+.card-container {
+    margin-top: 50px; /* Adjust this value as needed */
+    background: linear-gradient(to right, rgba(1,1,1,.1), rgba(1,1,1,.1));
+    color: rgba(0,0,0,.5);
+  }
+
+h1  {
+    color: rgba(0,0,0,.5);
+}
+
+.h2  {
+    color: rgba(0,0,0,.5);
+}
+
+h6  {
+    color: rgba(0,0,0,.5);
+}
+
+p {
+    color: rgba(0,0,0,.9);
+}
+
+.btn-default {
+    color: rgba(0,0,0,.5);
+    background-color: rgba(0,0,0,.2);
+    border-color: rgba(0,0,0,.2);
+}
+
+
+.btn-default:focus,
+.btn-default:hover {
+    color: rgba(0,0,0,.5);
+    background-color: rgba(0,0,0,.2);
+    border-color: rgba(0,0,0,.2);
+}
+
+input[type=color] {
+    display: inline-block;
+    background-color: rgba(0,0,0,.001);
+    max-width: 100em;
+    padding: 0px;
+    height: 40px;
+    border-color: rgba(0,0,0,.3);
+
+
+}
+
+.navbar-inverse {
+    background-color: transparent;
+    border-color: transparent;
+}
