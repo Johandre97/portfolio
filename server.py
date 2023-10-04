@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import csv
 import smtplib
 from email.message import EmailMessage
@@ -10,16 +10,68 @@ import requests
 import hashlib
 from bs4 import BeautifulSoup
 import jinja2
+import pymysql.cursors
+import sshtunnel
+from dotenv import load_dotenv
+import os
 
+# Define the SSH tunnel and database connection globally
+tunnel = None
+connection = None
+
+load_dotenv()
+
+# Function to establish the SSH tunnel and database connection
+def establish_database_connection():
+    global tunnel, connection
+    try:
+        tunnel = sshtunnel.SSHTunnelForwarder(
+            (os.environ.get('SSH_HOST')),  # SSH hostname for PythonAnywhere
+            ssh_username=os.environ.get('SSH_USERNAME'),
+            ssh_password=os.environ.get('SSH_PASSWORD'),  # Password for PythonAnywhere SSH
+            remote_bind_address=(os.environ.get('DB_ADDRESS'), int(os.environ.get('DB_PORT')))  # Database hostname and port
+        )
+        tunnel.start()
+
+        # MySQL Database Connection
+        connection = pymysql.connect(
+            host=os.environ.get('DB_HOST'),  # Localhost because of the SSH tunnel
+            user=os.environ.get('DB_USER'),
+            password=os.environ.get('DB_PASSWORD'),
+            db=os.environ.get('DB_NAME'),  # Your specific database name
+            port=tunnel.local_bind_port,  # Local port to which the SSH tunnel is bound
+            cursorclass=pymysql.cursors.DictCursor  # Use DictCursor for dictionary-style results
+        )
+        print("SSH tunnel and database connection established successfully.")
+    except Exception as e:
+        print(f"Error establishing database connection: {str(e)}")
+        
+# Initialize the Flask app
 app = Flask(__name__)
+# Enable debug mode
+app.debug = True
+
+# Establish the SSH tunnel and database connection
+establish_database_connection()
+
+# Define the execute_query function globally
+def execute_query(query, params=None):
+    try:
+        with connection.cursor() as cursor:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            result = cursor.fetchall()
+            return result
+    except pymysql.Error as e:
+        print(f"Error executing query: {str(e)}")
+        return None
+    
 
 @app.route('/')
 def my_home():
     return render_template('index.html')
-
-@app.route('/<string:page_name>')
-def html_page(page_name):
-    return render_template(page_name)
 
 #This is the HTML submit route for the infomation posted on the 'Contact Me' FORM
 @app.route('/submit_form', methods=['POST', 'GET'])
@@ -143,3 +195,49 @@ def spaceflight():
     except ValueError as e:
         # Handle JSON decoding error
         return f"JSON Decoding Error: {e}"
+    
+    
+@app.route('/generate_card', methods=['POST'])
+def generate_card():
+    if request.method == 'POST':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+
+        if not first_name or not last_name:
+            return jsonify({"error": "Name and surname cannot be empty."})
+
+        # Create a new User record in the database using raw SQL query
+        query = "INSERT INTO user (first_name, last_name) VALUES (%s, %s)"
+        params = (first_name, last_name)
+        execute_query(query, params)
+        # Commit the changes to the database
+        connection.commit()
+        
+        # Redirect to the pywork5.html page after adding the user
+        return redirect(url_for('pywork5'))
+
+    return jsonify({"error": "Invalid request."})
+
+@app.route('/pywork5')
+@app.route('/pywork5.html')
+def pywork5():
+    try:
+        # Define the SQL query to fetch all users
+        query = "SELECT * FROM user"
+        # Execute the query
+        users = execute_query(query)
+        print(f'users: {users}')
+        # Render the HTML template and pass the users data
+        return render_template('pywork5.html', users=users)
+    except Exception as e:
+        print(f"Error fetching users: {str(e)}")
+        return "An error occurred while fetching users."
+
+    
+@app.route('/<string:page_name>')
+def html_page(page_name):
+    return render_template(page_name)
+
+
+if __name__ == '__main__':
+    app.run()

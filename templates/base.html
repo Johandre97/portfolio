@@ -5,20 +5,20 @@
   <meta charset="UTF-8">
   <meta content="IE=edge" http-equiv="X-UA-Compatible">
   <meta content="width=device-width,initial-scale=1" name="viewport">
-  <meta content="description" name="description">
   <meta name="google" content="notranslate" />
   <meta content="Mashup templates have been developped by Orson.io team" name="author">
 
-  <!-- Disable tap highlight on IE -->
+  <!-- Disable tap highlight on IE  -->
   <meta name="msapplication-tap-highlight" content="no">
 
   <link rel="apple-touch-icon" sizes="180x180" href="./static/assets/apple-icon-180x180.png">
   <link href="./static/assets/favicon.ico" rel="icon">
 
-  <title>Colour Gradient Tool</title>
+  <title>{% block title %}Johandré's Porfolio{% endblock %}</title>
+  {% block headers %}{% endblock %}
 
-<link href="./static/main.3f6952e4.css" rel="stylesheet">
-<link href="./static/gradient.css" rel="stylesheet"></head>
+<link href="./static/main.3f6952e4.css" rel="stylesheet"></head>
+
 <body class="">
 <div id="site-border-left"></div>
 <div id="site-border-right"></div>
@@ -43,53 +43,22 @@
           <li><a href="./about.html" title="">04 : About me</a></li>
           <li><a href="./contact.html" title="">05 : Contact</a></li>
         </ul>
-
-         <ul class="nav navbar-nav navbar-right navbar-small visible-md visible-lg">
-            <li><a href="./pywork1.html" title="">001</a></li>
-            <li><a href="./pywork2.html" title="">002</a></li>
-            <li><a href="./pywork3.html" title="">003</a></li>
-            <li><a href="./pywork4.html" title="" class="active">004</a></li>
-            <li><a href="./pywork5.html" title="">005</a></li>
-          </ul>
-
-
       </div>
     </div>
   </nav>
 </header>
 
 <div class="section-container">
-  <div class="container">
-    <div class="row">
-      <div class="col-xs-12">
-        <div class="card-container">
-          <div class="text-center">
-            <h1 class="h2">004 : Color Gradient Tool</h1>
-          </div>
-          <p>A simple tool that allows you to generate color gradients and use them in your own css code.</p>
-          <h6></h6>
-          <br>
-          <div class="row">
-            <div class="col-md-10 col-md-offset-1 text-center">
-              <div class="text-center">
-                <input class='color1' type="color" name="color1" value="#00ff00">
-                <input class='color2' type="color" name="color2" value="#ff0000">
-              </div>
-              <br>
-              <button class="btn btn-default btn-lg" id="randomButton">Generate Random Colors</button>
-           </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="container">
+    {% block content %}{% endblock %}
   </div>
-</div>
+
 
 <footer class="footer-container text-center">
   <div class="container">
     <div class="row">
       <div class="col-xs-12">
-        <p>© Johandre de Beer | 2023</p>
+        <p>© Johandré de Beer | 2023</p>
       </div>
     </div>
   </div>
@@ -115,5 +84,5 @@
 </script>
 
 --> <script type="text/javascript" src="./static/main.70a66962.js"></script></body>
-<script type="text/javascript" src="./static/gradient.js"></script>
+
 </html>
