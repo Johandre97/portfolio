@@ -5,69 +5,30 @@ from email.message import EmailMessage
 from string import Template
 from pathlib import Path
 import qrcode
-import PIL
 import requests
 import hashlib
 from bs4 import BeautifulSoup
-import jinja2
-import pymysql.cursors
-import sshtunnel
 from dotenv import load_dotenv
 import os
-
-# Define the SSH tunnel and database connection globally
-tunnel = None
-connection = None
+from flask_sqlalchemy import SQLAlchemy
 
 load_dotenv()
 
-# Function to establish the SSH tunnel and database connection
-def establish_database_connection():
-    global tunnel, connection
-    try:
-        tunnel = sshtunnel.SSHTunnelForwarder(
-            (os.environ.get('SSH_HOST')),  # SSH hostname for PythonAnywhere
-            ssh_username=os.environ.get('SSH_USERNAME'),
-            ssh_password=os.environ.get('SSH_PASSWORD'),  # Password for PythonAnywhere SSH
-            remote_bind_address=(os.environ.get('DB_ADDRESS'), int(os.environ.get('DB_PORT')))  # Database hostname and port
-        )
-        tunnel.start()
 
-        # MySQL Database Connection
-        connection = pymysql.connect(
-            host=os.environ.get('DB_HOST'),  # Localhost because of the SSH tunnel
-            user=os.environ.get('DB_USER'),
-            password=os.environ.get('DB_PASSWORD'),
-            db=os.environ.get('DB_NAME'),  # Your specific database name
-            port=tunnel.local_bind_port,  # Local port to which the SSH tunnel is bound
-            cursorclass=pymysql.cursors.DictCursor  # Use DictCursor for dictionary-style results
-        )
-        print("SSH tunnel and database connection established successfully.")
-    except Exception as e:
-        print(f"Error establishing database connection: {str(e)}")
-        
-# Initialize the Flask app
+# Define the Flask app
 app = Flask(__name__)
-# Enable debug mode
-app.debug = True
 
-# Establish the SSH tunnel and database connection
-establish_database_connection()
+# Configure the SQLAlchemy database URI and Secret Key
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# Define the execute_query function globally
-def execute_query(query, params=None):
-    try:
-        with connection.cursor() as cursor:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            result = cursor.fetchall()
-            return result
-    except pymysql.Error as e:
-        print(f"Error executing query: {str(e)}")
-        return None
-    
+db = SQLAlchemy(app)
+
+class user(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
 
 @app.route('/')
 def my_home():
@@ -109,7 +70,7 @@ def send_email(data):
     with smtplib.SMTP(host='smtp.gmail.com', port=587) as smtp:
         smtp.ehlo()
         smtp.starttls()
-        smtp.login('johandrehdb@gmail.com', 'afjtruqujroeylvx')
+        smtp.login(os.getenv('SMTP_EMAIL'), os.getenv('SMTP_PASSWORD'))
         smtp.send_message(message)
 
 
@@ -195,8 +156,8 @@ def spaceflight():
     except ValueError as e:
         # Handle JSON decoding error
         return f"JSON Decoding Error: {e}"
-    
-    
+
+
 @app.route('/generate_card', methods=['POST'])
 def generate_card():
     if request.method == 'POST':
@@ -206,34 +167,31 @@ def generate_card():
         if not first_name or not last_name:
             return jsonify({"error": "Name and surname cannot be empty."})
 
-        # Create a new User record in the database using raw SQL query
-        query = "INSERT INTO user (first_name, last_name) VALUES (%s, %s)"
-        params = (first_name, last_name)
-        execute_query(query, params)
-        # Commit the changes to the database
-        connection.commit()
-        
+        # Create a new User record in the database
+        new_user = user(first_name=first_name, last_name=last_name)
+        db.session.add(new_user)
+        db.session.commit()
+
         # Redirect to the pywork5.html page after adding the user
         return redirect(url_for('pywork5'))
 
     return jsonify({"error": "Invalid request."})
 
+
 @app.route('/pywork5')
 @app.route('/pywork5.html')
 def pywork5():
     try:
-        # Define the SQL query to fetch all users
-        query = "SELECT * FROM user"
-        # Execute the query
-        users = execute_query(query)
-        print(f'users: {users}')
+        # Fetch all users from the database
+        users = user.query.all()
         # Render the HTML template and pass the users data
         return render_template('pywork5.html', users=users)
     except Exception as e:
         print(f"Error fetching users: {str(e)}")
         return "An error occurred while fetching users."
 
-    
+
+
 @app.route('/<string:page_name>')
 def html_page(page_name):
     return render_template(page_name)
